@@ -8,3 +8,11 @@ rgs = {
     location = "westus"
   }
 }
+vnet = {
+  vn1 = {
+    rgn      = "rg-test11"
+    name     = "vnet-1"
+    location = "westus"
+    as       = ["10.0.0.0/16"]
+  }
+}
