@@ -9,6 +9,10 @@ on:
     branches:
       - main
 
+permissions:
+  id-token: write
+  contents: read    
+
 jobs:
   terraform:
     runs-on: ubuntu-latest
@@ -23,6 +27,14 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: f397d6a9-0733-402c-aa24-6cb39fb53a48
+          tenant-id: ff7b0485-25c7-4264-b00f-fd1c4c1f0f08
+          subscription-id: 784dcbe8-46d9-4a47-be0e-70450bcf37c4
+
 
       - name: Terraform Init
         run: terraform init
