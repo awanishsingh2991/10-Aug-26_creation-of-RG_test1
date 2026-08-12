@@ -25,4 +25,11 @@ vnet = {
     location = "westus"
     as       = ["10.0.1.0/16"]
   }
+   
+  vn3 = {
+    rgn      = "rg-test11"
+    name     = "vnet-11"
+    location = "westus"
+    as       = ["10.0.2.0/16"]
+  }
 }
