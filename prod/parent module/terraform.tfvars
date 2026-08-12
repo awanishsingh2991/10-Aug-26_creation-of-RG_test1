@@ -14,7 +14,7 @@ rgs = {
 }
 vnet = {
   vn1 = {
-    rgn      = "rg-test11"
+    rgn      = "rg-test1"
     name     = "vnet-1"
     location = "westus"
     as       = ["10.0.0.0/16"]
@@ -27,7 +27,7 @@ vnet = {
   }
 
   vn3 = {
-    rgn      = "rg-test11"
+    rgn      = "rg-test111"
     name     = "vnet-11"
     location = "westus"
     as       = ["10.0.2.0/16"]
