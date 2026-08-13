@@ -4,6 +4,6 @@ module "rgss" {
 }
 module "vn" {
   depends_on = [module.rgss]
-  source     = "../child_module/resource_group/virtual_network"
+  source     = "../child_module/virtual_network"
   vnet       = var.vnet
 }
