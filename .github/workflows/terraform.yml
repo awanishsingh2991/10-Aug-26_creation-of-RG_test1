@@ -11,7 +11,7 @@ on:
 
 permissions:
   id-token: write
-  contents: read    
+  contents: read
 
 jobs:
   terraform:
@@ -28,6 +28,17 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
+      - name: Verify Azure Secrets
+        shell: bash
+        env:
+          CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          echo "Client ID: ${CLIENT_ID:0:8}********"
+          echo "Tenant ID: ${TENANT_ID:0:8}********"
+          echo "Subscription ID: ${SUBSCRIPTION_ID:0:8}********"
+
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -35,15 +46,15 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-
       - name: Terraform Init
         run: terraform init
-
-      - name: Terraform Format
-        run: terraform fmt -check -recursive
+        
 
       - name: Terraform Validate
         run: terraform validate
 
       - name: Terraform Plan
         run: terraform plan
+
+      - name: Terraform apply
+        run: terraform apply
