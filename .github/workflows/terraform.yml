@@ -92,7 +92,7 @@ jobs:
           echo "=========================================="
           echo "        TERRAFORM CD PLAN"
           echo "=========================================="
-          cat "terraform-plan/prod/parent module/tfplan.txt"
+          cat "terraform-plan/tfplan.txt"
 
       - name: Upload Plan for CD
         uses: actions/upload-artifact@v4
