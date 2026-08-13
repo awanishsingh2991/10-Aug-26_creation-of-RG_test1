@@ -7,6 +7,10 @@ rgs = {
     name     = "rg-test11"
     location = "westus"
 }
+rg3 = {
+    name     = "rg-test111"
+    location = "westus"
+}
 }
 vnet = {
   vn1 = {
