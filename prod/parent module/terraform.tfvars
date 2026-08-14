@@ -6,7 +6,11 @@ rgs = {
   rg2 = {
     name     = "rg-test11"
     location = "westus"
-}
+  }
+  rg3 = {
+    name     = "rg-test111"
+    location = "westus"
+  }
 }
 vnet = {
   vn1 = {
@@ -22,3 +26,4 @@ vnet = {
     as       = ["10.0.1.0/16"]
   }
 }
+#PR CI test

@@ -1,4 +1,4 @@
-name: Terraform CI
+name: Terraform CI/CD
 
 on:
   push:
@@ -12,9 +12,16 @@ on:
 permissions:
   id-token: write
   contents: read
+  actions: read
+  pull-requests: write
 
 jobs:
-  terraform:
+
+  # ============================================================
+  # CI - Format, Validate & Terraform Plan
+  # ============================================================
+  terraform-ci:
+    name: Terraform CI
     runs-on: ubuntu-latest
 
     defaults:
@@ -22,22 +29,12 @@ jobs:
         working-directory: ./prod/parent module
 
     steps:
+
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
-
-      - name: Verify Azure Secrets
-        shell: bash
-        env:
-          CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        run: |
-          echo "Client ID: ${CLIENT_ID:0:8}********"
-          echo "Tenant ID: ${TENANT_ID:0:8}********"
-          echo "Subscription ID: ${SUBSCRIPTION_ID:0:8}********"
 
       - name: Azure Login
         uses: azure/login@v2
@@ -48,11 +45,126 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
-        
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
 
       - name: Terraform Validate
         run: terraform validate
 
       - name: Terraform Plan
-        run: terraform plan
+        run: terraform plan -out=tfplan
 
+      - name: Convert Plan to Text
+        run: terraform show -no-color tfplan > tfplan.txt
+
+      # ========================================================
+      # Comment Terraform Plan on Pull Request
+      # ========================================================
+      - name: Comment Terraform Plan on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          TF_PLAN: ${{ github.workspace }}/prod/parent module/tfplan.txt
+        with:
+          script: |
+            const fs = require('fs');
+
+            const plan = fs.readFileSync(process.env.TF_PLAN, 'utf8');
+
+            const marker = '<!-- terraform-plan-comment -->';
+
+            const body = `${marker}
+            ## Terraform Plan
+
+            <details>
+            <summary>Click to view Terraform Plan</summary>
+
+            \`\`\`terraform
+            ${plan}
+            \`\`\`
+
+            </details>`;
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              {
+                owner,
+                repo,
+                issue_number
+              }
+            );
+
+            const existingComment = comments.find(
+              comment =>
+                comment.user.type === 'Bot' &&
+                comment.body.includes(marker)
+            );
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existingComment.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body
+              });
+            }
+
+      # ========================================================
+      # Upload Terraform Plan
+      # ========================================================
+      - name: Upload Terraform Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: |
+            prod/parent module/tfplan
+            prod/parent module/tfplan.txt
+          retention-days: 1
+
+
+  # ============================================================
+  # CD - Plan Review / Output Only
+  # ============================================================
+  terraform-cd:
+    name: Terraform CD
+    runs-on: ubuntu-latest
+
+    needs:
+      - terraform-ci
+
+    # CD only runs on push, not Pull Request
+    if: github.event_name == 'push'
+
+    steps:
+
+      - name: Download Terraform Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan
+          path: terraform-plan
+
+      - name: Display Terraform Plan
+        run: |
+          echo "=========================================="
+          echo "        TERRAFORM CD PLAN"
+          echo "=========================================="
+          echo "=========================================="
+          cat "terraform-plan/tfplan.txt"
+
+      - name: Upload Plan for CD
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-cd-plan
+          path: terraform-plan/tfplan.txt
+          retention-days: 1
