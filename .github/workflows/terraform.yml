@@ -203,13 +203,13 @@ jobs:
           echo "=========================================="
           echo "        TERRAFORM CD PLAN"
           echo "=========================================="
-          cat "../terraform-plan/tfplan.txt"
+          cat "$GITHUB_WORKSPACE/terraform-plan/tfplan.txt"
 
       # ========================================================
       # Terraform Apply
       # ========================================================
       - name: Terraform Apply
-        run: terraform apply -auto-approve "../terraform-plan/tfplan"
+        run: terraform apply -auto-approve "$GITHUB_WORKSPACE/terraform-plan/tfplan"
 
       # ========================================================
       # Upload Applied Plan
