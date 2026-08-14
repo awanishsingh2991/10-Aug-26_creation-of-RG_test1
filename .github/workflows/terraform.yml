@@ -144,7 +144,7 @@ jobs:
     needs:
       - terraform-ci
 
-    # CD runs only after code is pushed/merged to main
+    # CD runs only after push/merge to main
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     permissions:
@@ -159,7 +159,7 @@ jobs:
     steps:
 
       # ========================================================
-      # Checkout main branch
+      # Checkout main
       # ========================================================
       - name: Checkout
         uses: actions/checkout@v4
@@ -203,13 +203,13 @@ jobs:
           echo "=========================================="
           echo "        TERRAFORM CD PLAN"
           echo "=========================================="
-          cat "../terraform-plan/tfplan.txt"
+          cat "terraform-plan/tfplan.txt"
 
       # ========================================================
       # Terraform Apply
       # ========================================================
       - name: Terraform Apply
-        run: terraform apply -auto-approve "../terraform-plan/tfplan"
+        run: terraform apply -auto-approve "terraform-plan/tfplan"
 
       # ========================================================
       # Upload Applied Plan
