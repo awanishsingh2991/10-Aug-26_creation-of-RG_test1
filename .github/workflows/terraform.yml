@@ -131,6 +131,7 @@ jobs:
           path: |
             prod/parent module/tfplan
             prod/parent module/tfplan.txt
+          if-no-files-found: error
           retention-days: 1
 
 
@@ -193,7 +194,15 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: terraform-plan
-          path: terraform-plan
+          path: ${{ github.workspace }}/terraform-plan
+
+      - name: Verify Terraform Plan Files
+        run: |
+           echo "Workspace:"
+           pwd
+
+           echo "Downloaded artifact:"
+           find "$GITHUB_WORKSPACE/terraform-plan" -type f -print    
 
       # ========================================================
       # Display Terraform Plan
@@ -203,13 +212,21 @@ jobs:
           echo "=========================================="
           echo "        TERRAFORM CD PLAN"
           echo "=========================================="
-          cat "terraform-plan/tfplan.txt"
+
+          find "$GITHUB_WORKSPACE/terraform-plan" -type f -print
+
+          echo "=========================================="
+          echo "        PLAN CONTENT"
+          echo "=========================================="
+
+          cat "$GITHUB_WORKSPACE/terraform-plan/tfplan.txt"
+
 
       # ========================================================
       # Terraform Apply
       # ========================================================
       - name: Terraform Apply
-        run: terraform apply -auto-approve "terraform-plan/tfplan"
+        run: terraform apply -auto-approve "$GITHUB_WORKSPACE/terraform-plan/tfplan"
 
       # ========================================================
       # Upload Applied Plan
