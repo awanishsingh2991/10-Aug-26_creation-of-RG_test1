@@ -198,11 +198,11 @@ jobs:
 
       - name: Verify Terraform Plan Files
         run: |
-           echo "Workspace:"
-           pwd
+          echo "Workspace:"
+          pwd
 
-           echo "Downloaded artifact:"
-           find "$GITHUB_WORKSPACE/terraform-plan" -type f -print    
+          echo "Downloaded artifact:"
+          find "$GITHUB_WORKSPACE/terraform-plan" -type f -print
 
       # ========================================================
       # Display Terraform Plan
@@ -221,7 +221,6 @@ jobs:
 
           cat "$GITHUB_WORKSPACE/terraform-plan/tfplan.txt"
 
-
       # ========================================================
       # Terraform Apply
       # ========================================================
@@ -235,5 +234,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: terraform-cd-plan
-          path: terraform-plan/tfplan.txt
+          path: ${{ github.workspace }}/terraform-plan/tfplan.txt
           retention-days: 1
