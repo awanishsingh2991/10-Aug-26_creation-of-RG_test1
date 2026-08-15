@@ -23,7 +23,7 @@ vnet = {
     rgn      = "rg-test11"
     name     = "vnet-11"
     location = "westus"
-    as       = ["10.0.0.0/16"]
+    as       = ["10.1.0.0/16"]
   }
 }
 #PR CI test
