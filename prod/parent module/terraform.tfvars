@@ -3,14 +3,6 @@ rgs = {
     name     = "rg-test1"
     location = "westus"
   }
-  rg2 = {
-    name     = "rg-test11"
-    location = "westus"
-  }
-  rg3 = {
-    name     = "rg-test111"
-    location = "westus"
-  }
 }
 vnet = {
   vn1 = {
@@ -19,12 +11,17 @@ vnet = {
     location = "westus"
     as       = ["10.0.0.0/16"]
   }
-  vn2 = {
-    rgn      = "rg-test11"
-    name     = "vnet-11"
-    location = "westus"
-    as       = ["10.1.0.0/16"]
+
+}
+stgacc = {
+  stg1 = {
+    name                  = "stg-awa-12345"
+    location              = "westus"
+    rgn                   = "rg-test1"
+    at                    = "Standard"
+    art                   = "LRS"
+    contname              = "tfstate"
+    container_access_type = "private"
+
   }
 }
-#PR CI test
-#test codeowner
