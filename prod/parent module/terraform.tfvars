@@ -23,5 +23,10 @@ stgacc = {
     contname              = "tfstate"
     container_access_type = "private"
 
+  vn2 = {
+    rgn      = "rg-test11"
+    name     = "vnet-11"
+    location = "westus"
+    as       = ["10.1.0.0/16"]
   }
 }
