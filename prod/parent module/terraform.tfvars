@@ -11,17 +11,12 @@ vnet = {
     location = "westus"
     as       = ["10.0.0.0/16"]
   }
-
-}
-stgacc = {
-  stg1 = {
-    name                  = "stg-awa-12345"
-    location              = "westus"
-    rgn                   = "rg-test1"
-    at                    = "Standard"
-    art                   = "LRS"
-    contname              = "tfstate"
-    container_access_type = "private"
-
+  vn2 = {
+    rgn      = "rg-test11"
+    name     = "vnet-11"
+    location = "westus"
+    as       = ["10.0.1.0/16"]
   }
 }
+#PR CI test
+#test codeowner
