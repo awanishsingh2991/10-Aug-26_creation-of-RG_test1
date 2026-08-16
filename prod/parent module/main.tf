@@ -11,7 +11,6 @@ module "subnid" {
   depends_on = [module.vn]
   source     = "../child_module/subnet"
   subid      = var.subid
-
 }
 module "storage_account" {
   depends_on = [module.rgss]
