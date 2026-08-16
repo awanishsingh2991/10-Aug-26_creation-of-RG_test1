@@ -22,5 +22,18 @@ vnet = {
     location = "westus"
     as       = ["10.0.0.0/16"]
   }
-
+}
+subid = {
+  sub1 = {
+    name         = "frontend-subnet"
+    rgn          = "rg-test1"
+    virtnet_name = "vnet-1"
+    ap           = ["10.0.0.0/24"]
+  }
+  sub2 = {
+    name         = "backend-subnet"
+    rgn          = "rg-test1"
+    virtnet_name = "vnet-1"
+    ap           = ["10.0.1.0/24"]
+  }
 }
