@@ -1,1 +1,3 @@
-variable "stgacc" {}
+variable "stgacc" {
+    
+}
