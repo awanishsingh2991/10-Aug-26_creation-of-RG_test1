@@ -1,20 +1,33 @@
 name: Terraform CI/CD
 
 on:
+
+  # ============================================================
+  # Feature branch push
+  # Local → virtual-network-vnet1 → CI
+  # ============================================================
   push:
     branches:
       - virtual-network-vnet1
+
+  # ============================================================
+  # Main branch push
+  # PR merge → main → CI + CD
+  # ============================================================
       - main
 
-  pull_request:
-    branches:
-      - main
+  # ============================================================
+  # Manual workflow trigger
+  # ============================================================
+  workflow_dispatch:
 
+
+# ==============================================================
+# Default permissions
+# ==============================================================
 permissions:
-  id-token: write
   contents: read
-  actions: read
-  pull-requests: write
+
 
 jobs:
 
@@ -25,18 +38,41 @@ jobs:
     name: Terraform CI
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+
     defaults:
       run:
         working-directory: ./prod/parent module
 
     steps:
 
+      # ========================================================
+      # Checkout
+      # ========================================================
       - name: Checkout
         uses: actions/checkout@v4
 
+
+      # ========================================================
+      # Setup Terraform
+      # ========================================================
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
+
+      # ========================================================
+      # Terraform Format Check
+      # ========================================================
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+
+      # ========================================================
+      # Azure Login - OIDC
+      # ========================================================
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -44,30 +80,46 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+
       # ========================================================
-      # Remote Backend
+      # Terraform Init
       # ========================================================
       - name: Terraform Init
-        run: terraform init
+        run: terraform init -input=false -lock-timeout=5m
 
-      - name: Terraform Format Check
-        run: terraform fmt -check -recursive
 
+      # ========================================================
+      # Terraform Validate
+      # ========================================================
       - name: Terraform Validate
         run: terraform validate
 
-      - name: Terraform Plan
-        run: terraform plan -out=tfplan
 
+      # ========================================================
+      # Terraform Plan
+      # ========================================================
+      - name: Terraform Plan
+        run: terraform plan -input=false -lock-timeout=5m -out=tfplan
+
+
+      # ========================================================
+      # Convert Plan to Text
+      # ========================================================
       - name: Convert Plan to Text
         run: terraform show -no-color tfplan > tfplan.txt
+
 
       # ========================================================
       # Comment Terraform Plan on PR
       # ========================================================
+      # This will work when this workflow is later triggered
+      # from a PR context, if you choose to enable pull_request
+      # trigger in future.
+      # ========================================================
       - name: Comment Terraform Plan on PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
+
         env:
           TF_PLAN: ${{ github.workspace }}/prod/parent module/tfplan.txt
 
@@ -75,7 +127,10 @@ jobs:
           script: |
             const fs = require('fs');
 
-            const plan = fs.readFileSync(process.env.TF_PLAN, 'utf8');
+            const plan = fs.readFileSync(
+              process.env.TF_PLAN,
+              'utf8'
+            );
 
             const marker = '<!-- terraform-plan-comment -->';
 
@@ -125,18 +180,23 @@ jobs:
               });
             }
 
+
       # ========================================================
       # Upload Terraform Plan
       # ========================================================
       - name: Upload Terraform Plan
         uses: actions/upload-artifact@v4
+
         with:
           name: terraform-plan
+
           path: |
             prod/parent module/tfplan
             prod/parent module/tfplan.txt
+
           if-no-files-found: error
-          retention-days: 1
+
+          retention-days: 3
 
 
   # ============================================================
@@ -144,30 +204,63 @@ jobs:
   # ============================================================
   terraform-cd:
     name: Terraform CD
+
     runs-on: ubuntu-latest
 
     needs:
       - terraform-ci
 
+    # ==========================================================
+    # CD ONLY runs after push to main
+    # ==========================================================
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
+
+    # ==========================================================
+    # Production Environment
+    # ==========================================================
+    environment:
+      name: production
+
+
+    # ==========================================================
+    # Prevent multiple Terraform Apply operations
+    # ==========================================================
+    concurrency:
+      group: terraform-production
+      cancel-in-progress: false
+
+
     permissions:
-      id-token: write
       contents: read
       actions: read
+      id-token: write
+
 
     defaults:
       run:
         working-directory: ./prod/parent module
 
+
     steps:
 
+      # ========================================================
+      # Checkout
+      # ========================================================
       - name: Checkout
         uses: actions/checkout@v4
 
+
+      # ========================================================
+      # Setup Terraform
+      # ========================================================
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
+
+      # ========================================================
+      # Azure Login - OIDC
+      # ========================================================
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -175,34 +268,40 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      # ========================================================
-      # Initialize Remote Backend
-      # ========================================================
-      - name: Terraform Init
-        run: terraform init
 
       # ========================================================
-      # Download Plan
+      # Terraform Init
+      # ========================================================
+      - name: Terraform Init
+        run: terraform init -input=false -lock-timeout=5m
+
+
+      # ========================================================
+      # Download Exact Plan Generated by CI
       # ========================================================
       - name: Download Terraform Plan
         uses: actions/download-artifact@v4
+
         with:
           name: terraform-plan
           path: ${{ github.workspace }}/terraform-plan
 
+
       # ========================================================
-      # Verify Plan
+      # Verify Plan Files
       # ========================================================
       - name: Verify Terraform Plan Files
         run: |
-          echo "Workspace:"
-          pwd
+          echo "Checking Terraform plan files..."
 
-          echo "Downloaded artifact:"
-          find "$GITHUB_WORKSPACE/terraform-plan" -type f -print
+          test -f "$GITHUB_WORKSPACE/terraform-plan/tfplan"
+          test -f "$GITHUB_WORKSPACE/terraform-plan/tfplan.txt"
+
+          echo "Terraform plan files verified successfully."
+
 
       # ========================================================
-      # Display Plan
+      # Display Terraform Plan
       # ========================================================
       - name: Display Terraform Plan
         run: |
@@ -212,18 +311,26 @@ jobs:
 
           cat "$GITHUB_WORKSPACE/terraform-plan/tfplan.txt"
 
+
       # ========================================================
-      # Apply
+      # Terraform Apply
       # ========================================================
       - name: Terraform Apply
-        run: terraform apply -auto-approve "$GITHUB_WORKSPACE/terraform-plan/tfplan"
+        run: |
+          terraform apply \
+            -input=false \
+            "$GITHUB_WORKSPACE/terraform-plan/tfplan"
+
 
       # ========================================================
       # Upload Applied Plan
       # ========================================================
       - name: Upload Terraform CD Plan
         uses: actions/upload-artifact@v4
+
         with:
           name: terraform-cd-plan
+
           path: ${{ github.workspace }}/terraform-plan/tfplan.txt
-          retention-days: 1
+
+          retention-days: 3
